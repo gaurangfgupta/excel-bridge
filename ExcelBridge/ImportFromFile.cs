@@ -6,7 +6,9 @@ using Microsoft.Office.Interop.Excel;
 
 namespace ExcelBridge
 {
-
+    /// <summary>
+    /// Import data from Excel file.
+    /// </summary>
     public class ImportFromFile
     {
         private Application _excelApp;
@@ -31,7 +33,8 @@ namespace ExcelBridge
         }
 
         /// <summary>
-        /// Imports data from Excel file.
+        /// Import data from Excel file.
+        /// <para>No validations are performed.</para>
         /// </summary>
         /// <returns><see cref="DataSet"/> corresponding to the Excel file, containing one or more <see cref="System.Data.DataTable"/> corresponding to each Excel sheet.
         /// Each row of table corresponds to each row of Excel sheet</returns>
