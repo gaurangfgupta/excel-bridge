@@ -4,8 +4,9 @@ using System.Data;
 //Excel
 using Microsoft.Office.Interop.Excel;
 
-namespace ExcelUtilities.WorkerClasses
+namespace ExcelBridge
 {
+
     public class ImportFromFile
     {
         private Application _excelApp;
@@ -29,6 +30,11 @@ namespace ExcelUtilities.WorkerClasses
 
         }
 
+        /// <summary>
+        /// Imports data from Excel file.
+        /// </summary>
+        /// <returns><see cref="DataSet"/> corresponding to the Excel file, containing one or more <see cref="System.Data.DataTable"/> corresponding to each Excel sheet.
+        /// Each row of table corresponds to each row of Excel sheet</returns>
         public DataSet Import()
         {
             completeData = new DataSet();
@@ -45,7 +51,9 @@ namespace ExcelUtilities.WorkerClasses
                 //Add a table for each sheet to DataSet of all contacts and name it same as the name of the sheet
                 table.TableName = sheet.Name;
 
-                //Adding headers to table
+                //Adding headers to table. Steps:
+                //1. Get headers from Excel sheet
+                //2. Add the headers obtained from Step 1 to the table
                 headers = getHeaders(sheet);
                 addHeadersToTable(headers, ref table);
                 headers = null;
@@ -58,33 +66,43 @@ namespace ExcelUtilities.WorkerClasses
             }
             _book.Close(false);
             _excelApp.Quit();
+            releaseObject(allSheets);
             releaseObject(_book);
             releaseObject(_excelApp);
-            
+
             return completeData;
         }
 
+        /// <summary>
+        /// Get the headers fom the first row of Excel sheet
+        /// </summary>
+        /// <param name="fromSheet">The Excel sheet</param>
+        /// <returns>a list of headers</returns>
         private List<string> getHeaders(Worksheet fromSheet)
         {
             List<string> headers = new List<string>();
             //Get headers from the sheet
             Range usedRangeInSheet = fromSheet.UsedRange;
-            foreach (Range row in usedRangeInSheet.Rows)
+
+            Range row = usedRangeInSheet.Rows[1];
+            if (row.Row == 1)
             {
-                if (row.Row == 1)
+                foreach (Range col in row.Columns)
                 {
-                    foreach (Range col in row.Columns)
-                    {
-                        headers.Add(col.Text);
-                        releaseObject(col);
-                    }
+                    headers.Add(col.Text);
+                    releaseObject(col);
                 }
-                releaseObject(row);
             }
+            releaseObject(row);
             releaseObject(usedRangeInSheet);
             return headers;
         }
 
+        /// <summary>
+        /// Add columns from the <paramref name="_headers"/> list to the provided <paramref name="_table"/>
+        /// </summary>
+        /// <param name="_headers">The list of headers to be added to table</param>
+        /// <param name="_table">The table in which columns are to be created</param>
         private void addHeadersToTable(List<string> _headers, ref System.Data.DataTable _table)
         {
             foreach (string header in _headers)
@@ -93,6 +111,11 @@ namespace ExcelUtilities.WorkerClasses
             }
         }
 
+        /// <summary>
+        /// Fills the <paramref name="_table"/> with data from the <paramref name="_sheet"/>
+        /// </summary>
+        /// <param name="_sheet">The Excel sheet to get data from</param>
+        /// <param name="_table">The table where the data is to be filled</param>
         private void addValuesToTable(Worksheet _sheet, ref System.Data.DataTable _table)
         {
             Range used = _sheet.UsedRange;
@@ -123,6 +146,10 @@ namespace ExcelUtilities.WorkerClasses
             releaseObject(used);
         }
 
+        /// <summary>
+        /// Releases resources of the Excel objects like rows, columns, sheet, application etc.
+        /// </summary>
+        /// <param name="obj">The object to release</param>
         private static void releaseObject(object obj)
         {
             System.Runtime.InteropServices.Marshal.ReleaseComObject(obj);
