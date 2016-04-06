@@ -118,6 +118,36 @@ namespace ExcelBridgeTest
             _dataset.Tables.RemoveAt(1);
             #endregion
         }
+
+        [TestMethod]
+        public void GetRecordCount()
+        {
+            DataSet ds = new DataSet();
+
+            DataTable table1 = ds.Tables.Add();
+            table1.TableName = "Table 1";
+            table1.Columns.Add("Values");
+            for (int i = 1; i <= 10; i++)
+            {
+                DataRow row = table1.NewRow();
+                row[0] = string.Format("Value # {0}", i);
+                table1.Rows.Add(row);
+            }
+
+            DataTable table2 = ds.Tables.Add();
+            table2.TableName = "Table 2";
+            table2.Columns.Add("Values");
+            for (int i = 1; i <= 100; i++)
+            {
+                DataRow row = table2.NewRow();
+                row[0] = string.Format("Value # {0}", i);
+                table2.Rows.Add(row);
+            }
+
+             Dictionary<string,int> recordCount= DataSetHelper.GetRecordsCount(ref ds);
+            Assert.AreEqual(10, recordCount[table1.TableName]);
+            Assert.AreEqual(100, recordCount[table2.TableName]);
+        }
     }
 
 }

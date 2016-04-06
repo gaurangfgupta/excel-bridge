@@ -88,5 +88,14 @@ namespace ExcelBridge.Helper
             return deletionSummary;
         }
 
+        public static Dictionary<string,int> GetRecordsCount(ref DataSet dataset)
+        {
+            Dictionary<string, int> recordCountList = new Dictionary<string, int>();
+            foreach (DataTable table in dataset.Tables)
+            {
+                recordCountList.Add(table.TableName, table.Rows.Count);
+            }
+            return recordCountList;
+        }
     }
 }

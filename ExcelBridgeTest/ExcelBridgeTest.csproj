@@ -55,7 +55,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ImportFromFileTest.cs" />
-    <Compile Include="DatatableValidatorTest.cs" />
+    <Compile Include="Helper\DataSetHelperTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExcelBridge\ExcelBridge.csproj">
