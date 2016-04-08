@@ -7,9 +7,16 @@ using System.Data;
 
 namespace ExcelBridge.Helper
 {
-    public static class DataSetHelper
+    public class DataSetHelper
     {
-        public static Dictionary<string, bool> CheckColumnsConsistency(DataSet dataset, bool ignoreColumnOrder = true)
+        private DataSet dataset;
+
+        public DataSetHelper(ref DataSet _dataset)
+        {
+            dataset = _dataset;
+        }
+
+        public  Dictionary<string, bool> CheckColumnsConsistency(bool ignoreColumnOrder = true)
         {
             Dictionary<string, bool> validationSummary = new Dictionary<string, bool>();
             if (dataset.Tables.Count > 1)
@@ -34,7 +41,7 @@ namespace ExcelBridge.Helper
             return validationSummary;
         }
 
-        private static List<string> getColumnsOfDataTable(DataTable sourceTable, bool sort = false)
+        private  List<string> getColumnsOfDataTable(DataTable sourceTable, bool sort = false)
         {
             List<string> columns = new List<string>();
             foreach (DataColumn col in sourceTable.Columns)
@@ -48,12 +55,12 @@ namespace ExcelBridge.Helper
             return columns;
         }
 
-        public static Dictionary<string, int> RemoveBlankRows(ref DataSet dataSet)
+        public  Dictionary<string, int> RemoveBlankRows()
         {
             Dictionary<string, int> deletionSummary;
             deletionSummary = new Dictionary<string, int>();
 
-            foreach (DataTable table in dataSet.Tables)
+            foreach (DataTable table in dataset.Tables)
             {
                 int deletedRowsCount = 0;
                 List<DataRow> rowsToDelete = new List<DataRow>();
@@ -88,7 +95,7 @@ namespace ExcelBridge.Helper
             return deletionSummary;
         }
 
-        public static Dictionary<string,int> GetRecordsCount(ref DataSet dataset)
+        public  Dictionary<string, int> GetRecordsCount()
         {
             Dictionary<string, int> recordCountList = new Dictionary<string, int>();
             foreach (DataTable table in dataset.Tables)
@@ -97,5 +104,27 @@ namespace ExcelBridge.Helper
             }
             return recordCountList;
         }
+
+        public  bool ColumnsExist(List<string> columns)
+        {
+            Dictionary<string, string> offenders = new Dictionary<string, string>();
+            bool exists = true;
+
+            foreach (string column in columns)
+            {
+                foreach (DataTable table in dataset.Tables)
+                {
+                    if (!table.Columns.Contains(column))
+                    {
+                        offenders.Add(column,table.TableName);
+                        exists = false;
+                    }
+                    if (!exists) break;
+                }
+                if (!exists) break;
+            }
+            return exists;
+        }
+
     }
 }

@@ -38,6 +38,7 @@ namespace ExcelBridge
         /// </summary>
         /// <returns><see cref="DataSet"/> corresponding to the Excel file, containing one or more <see cref="System.Data.DataTable"/> corresponding to each Excel sheet.
         /// Each row of table corresponds to each row of Excel sheet</returns>
+        /// <exception cref="DuplicateNameException">Thrown if Excel contains sheets with duplicate name</exception>
         public DataSet Import()
         {
             completeData = new DataSet();
@@ -46,7 +47,7 @@ namespace ExcelBridge
             {
                 System.Data.DataTable table = new System.Data.DataTable();
                 List<string> headers;
-
+                
                 //System.Diagnostics.Debug.Write("**************************************************************************");
                 //System.Diagnostics.Debug.Write(sheet.Name);
                 //System.Diagnostics.Debug.WriteLine("**************************************************************************");
@@ -63,7 +64,16 @@ namespace ExcelBridge
 
                 //Import data from sheet into table
                 addValuesToTable(sheet, ref table);
-                completeData.Tables.Add(table);
+
+                try
+                {
+                    completeData.Tables.Add(table);
+                }
+                catch (DuplicateNameException)
+                {
+
+                    throw;
+                }
                 table = null;
                 releaseObject(sheet);
             }

@@ -9,6 +9,7 @@ namespace ExcelBridgeTest
     [TestClass]
     public class DatatableValidatorTest
     {
+
         [TestMethod]
         public void CheckColumnsConsistency()
         {
@@ -24,8 +25,10 @@ namespace ExcelBridgeTest
                 referenceTable.Columns.Add(string.Format("Column{0}", i));
             }
             _dataset.Tables.Add(referenceTable);
+
+            DataSetHelper dsHelper = new DataSetHelper(ref _dataset);
             //Check consistency
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset);
+            resultSummary = dsHelper.CheckColumnsConsistency();
             //Assert expected results
             Assert.AreEqual(resultSummary.Count, 0);
             //Release objects
@@ -40,14 +43,14 @@ namespace ExcelBridgeTest
             }
             _dataset.Tables.Add(equalTable);
             //Check consistency ignoring column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset);
+            resultSummary = dsHelper.CheckColumnsConsistency();
             //Assert expected results
             foreach (bool columnConsistencyResult in resultSummary.Values)
             {
                 Assert.IsTrue(columnConsistencyResult);
             }
             //Check consistency considering column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset,false);
+            resultSummary = dsHelper.CheckColumnsConsistency(false);
             //Assert expected results
             foreach (bool columnConsistencyResult in resultSummary.Values)
             {
@@ -67,11 +70,11 @@ namespace ExcelBridgeTest
             }
             _dataset.Tables.Add(differentOrderTable);
             //Check consistency ignoring column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset);
+            resultSummary = dsHelper.CheckColumnsConsistency();
             //Assert expected results
             Assert.IsTrue(resultSummary[differentOrderTable.TableName]);
             //Check consistency considering column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset,false);
+            resultSummary = dsHelper.CheckColumnsConsistency(false);
             //Assert expected results
             Assert.IsFalse(resultSummary[differentOrderTable.TableName]);
             //Release objects
@@ -88,7 +91,7 @@ namespace ExcelBridgeTest
             }
             _dataset.Tables.Add(differentCountTable);
             //Check consistency
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset);
+            resultSummary = dsHelper.CheckColumnsConsistency();
             //Assert expected results
             Assert.IsFalse(resultSummary[differentCountTable.TableName]);
             //Release objects
@@ -106,11 +109,11 @@ namespace ExcelBridgeTest
             differentColumnsTable.Columns.Add(string.Format("Column{0}", 7));
             _dataset.Tables.Add(differentColumnsTable);
             //Check consistency ignoring column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset);
+            resultSummary = dsHelper.CheckColumnsConsistency();
             //Assert expected results
             Assert.IsFalse(resultSummary[differentColumnsTable.TableName]);
             //Check consistency considering column order
-            resultSummary = DataSetHelper.CheckColumnsConsistency(_dataset,false);
+            resultSummary = dsHelper.CheckColumnsConsistency(false);
             //Assert expected results
             Assert.IsFalse(resultSummary[differentColumnsTable.TableName]);
             //Release objects
@@ -144,9 +147,47 @@ namespace ExcelBridgeTest
                 table2.Rows.Add(row);
             }
 
-             Dictionary<string,int> recordCount= DataSetHelper.GetRecordsCount(ref ds);
+            DataSetHelper dsHelper = new DataSetHelper(ref ds);
+            Dictionary<string, int> recordCount = dsHelper.GetRecordsCount();
             Assert.AreEqual(10, recordCount[table1.TableName]);
             Assert.AreEqual(100, recordCount[table2.TableName]);
+        }
+
+        [TestMethod]
+        public void ColumnsExist()
+        {
+            #region Create dataset  and reference columns
+            //10 tables, each with 10 columns
+            DataSet dataset = new DataSet();
+            for (int i = 1; i < 11; i++)
+            {
+                DataTable table = new DataTable(string.Format("Table{0}", i));
+                for (int j = 1; j < 11; j++)
+                {
+                    table.Columns.Add(string.Format("Column{0}", j));
+                }
+                dataset.Tables.Add(table);
+            }
+            //5 Reference columns
+            List<string> referenceColumns = new List<string>();
+            for (int i = 1; i < 6; i++)
+            {
+                referenceColumns.Add(string.Format("Column{0}", i));
+            }
+            #endregion
+
+            bool allColumnsExist;
+            #region Tests
+            DataSetHelper dsHelper = new DataSetHelper(ref dataset);
+            allColumnsExist = dsHelper.ColumnsExist(referenceColumns);
+            Assert.IsTrue(allColumnsExist);
+
+            //Inject fault: 2nd column of fourth table
+            dataset.Tables[3].Columns[1].ColumnName = dataset.Tables[3].Columns[1].ColumnName + "2";
+
+            allColumnsExist = dsHelper.ColumnsExist(referenceColumns);
+            Assert.IsFalse(allColumnsExist);
+            #endregion
         }
     }
 
