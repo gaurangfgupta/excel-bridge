@@ -9,26 +9,51 @@ namespace ExcelBridge
     /// <summary>
     /// Import data from Excel file.
     /// </summary>
-    public class ImportFromFile
+    public class ExcelFile : IDisposable
     {
         private Application _excelApp;
         private Workbook _book;
-        private Sheets allSheets;
-        private DataSet completeData;
+        private Sheets _allSheets;
+        private DataSet _completeData;
 
-        public ImportFromFile(string filePath)
+        public ExcelFile(string filePath)
         {
             _excelApp = new Application();
             _book = _excelApp.Workbooks.Open(filePath);
+            _allSheets = _book.Sheets;
             //completeData = new DataSet();
         }
 
-        ~ImportFromFile()
+        ~ExcelFile()
         {
-            _excelApp = null; ;
-            _book = null;
-            allSheets = null;
-            completeData = null;
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            _completeData = null;
+
+            //Release Excel sheets
+            if (_allSheets!=null)
+            {
+                releaseObject(_allSheets);
+                _allSheets = null; 
+            }
+
+            //Release close Excel book/file
+            if (_book != null)
+            {
+                _book.Close(false);
+                releaseObject(_book);
+                _book = null;
+            }
+            //Quit MS Excel
+            if (_excelApp != null)
+            {
+                _excelApp.Quit();
+                releaseObject(_excelApp);
+                _excelApp = null;
+            }
 
         }
 
@@ -41,13 +66,13 @@ namespace ExcelBridge
         /// <exception cref="DuplicateNameException">Thrown if Excel contains sheets with duplicate name</exception>
         public DataSet Import()
         {
-            completeData = new DataSet();
-            allSheets = _book.Sheets;
-            foreach (Worksheet sheet in allSheets)
+            _completeData = new DataSet();
+
+            foreach (Worksheet sheet in _allSheets)
             {
                 System.Data.DataTable table = new System.Data.DataTable();
-                List<string> headers;
-                
+                string[] headers;
+
                 //System.Diagnostics.Debug.Write("**************************************************************************");
                 //System.Diagnostics.Debug.Write(sheet.Name);
                 //System.Diagnostics.Debug.WriteLine("**************************************************************************");
@@ -67,7 +92,7 @@ namespace ExcelBridge
 
                 try
                 {
-                    completeData.Tables.Add(table);
+                    _completeData.Tables.Add(table);
                 }
                 catch (DuplicateNameException)
                 {
@@ -77,32 +102,34 @@ namespace ExcelBridge
                 table = null;
                 releaseObject(sheet);
             }
-            _book.Close(false);
-            _excelApp.Quit();
-            releaseObject(allSheets);
-            releaseObject(_book);
-            releaseObject(_excelApp);
+            //_book.Close(false);
+            //_excelApp.Quit();
+            //releaseObject(allSheets);
+            //releaseObject(_book);
+            //releaseObject(_excelApp);
 
-            return completeData;
+            return _completeData;
         }
 
         /// <summary>
-        /// Get the headers fom the first row of Excel sheet
+        /// Get the headers Excel sheet, assuming that Row 1 of Excel file contains headers, beginning from Column A with no blank columns in between the first and last header
         /// </summary>
         /// <param name="fromSheet">The Excel sheet</param>
         /// <returns>a list of headers</returns>
-        private List<string> getHeaders(Worksheet fromSheet)
+        private string[] getHeaders(Worksheet fromSheet)
         {
-            List<string> headers = new List<string>();
             //Get headers from the sheet
             Range usedRangeInSheet = fromSheet.UsedRange;
-
             Range row = usedRangeInSheet.Rows[1];
+            string[] headers = new string[row.Columns.Count];
+
             if (row.Row == 1)
             {
+                int i = 0;
                 foreach (Range col in row.Columns)
                 {
-                    headers.Add(col.Text);
+                    headers[i] = col.Text;
+                    i++;
                     releaseObject(col);
                 }
             }
@@ -116,7 +143,7 @@ namespace ExcelBridge
         /// </summary>
         /// <param name="_headers">The list of headers to be added to table</param>
         /// <param name="_table">The table in which columns are to be created</param>
-        private void addHeadersToTable(List<string> _headers, ref System.Data.DataTable _table)
+        private void addHeadersToTable(string[] _headers, ref System.Data.DataTable _table)
         {
             foreach (string header in _headers)
             {
@@ -146,9 +173,9 @@ namespace ExcelBridge
                         //value = (column.Text is DBNull) ? "-----" : column.Text;
                         value = column.Text ?? null;
                         newRow[i++] = value;
-                        System.Diagnostics.Debug.Write("\t");
-                        System.Diagnostics.Debug.Write(value);
-                        System.Diagnostics.Debug.WriteLine("<<<<<Row End");
+                        //System.Diagnostics.Debug.Write("\t");
+                        //System.Diagnostics.Debug.Write(value);
+                        //System.Diagnostics.Debug.WriteLine("<<<<<Row End");
                         releaseObject(column);
                     }
                     _table.Rows.Add(newRow);
@@ -169,5 +196,76 @@ namespace ExcelBridge
             obj = null;
             GC.Collect();
         }
+
+        /// <summary>
+        /// Assuming that Row 1 of Excel file contains headers, beginning from Column A with no blank columns in between the first and last header
+        /// </summary>
+        /// <param name="fromSheetName">The name of the sheet from which to get headers</param>
+        /// <returns>Headers from specified sheet</returns>
+        public string[] GetHeaders(string fromSheetName)
+        {
+            _allSheets = _book.Sheets;
+            string[] headers = getHeaders(_allSheets.Item[fromSheetName]);
+            return headers;
+        }
+
+        /// <summary>
+        /// Returns 
+        /// </summary>
+        /// <returns>Headers from all sheets of Excel file in dicionary where Key contains the sheet name and values are array of headers for that Key</returns>
+        public Dictionary<string, string[]> GetHeaders()
+        {
+            Dictionary<string, string[]> sheetHeaders = new Dictionary<string, string[]>();
+            _allSheets = _book.Sheets;
+            foreach (Worksheet sheet in _allSheets)
+            {
+                sheetHeaders.Add(sheet.Name, getHeaders(sheet));
+            }
+            return sheetHeaders;
+        }
+
+        public bool HeadersExist(string sheetName, string[] referenceHeaders)
+        {
+            //Dictionary<string, string> offenders = new Dictionary<string, string>();
+            bool exists = true;
+            string[] headers = GetHeaders(sheetName);
+
+            foreach (string referenceHeader in referenceHeaders)
+            {
+                bool headerExists = Array.IndexOf(headers, referenceHeader) > -1;
+                if (!headerExists)
+                {
+                    //offenders.Add(referenceHeader, table.TableName);
+                    exists = false;
+                }
+                if (!exists) break;
+            }
+            return exists;
+        }
+
+        public bool HeadersExist(string[] referenceHeaders)
+        {
+            //Dictionary<string, string> offenders = new Dictionary<string, string>();
+            bool exists = true;
+
+            foreach (string referenceHeader in referenceHeaders)
+            {
+                foreach (Worksheet sheet in _allSheets)
+                {
+                    string[] headers = getHeaders(sheet);
+                    bool headerExists = Array.IndexOf(headers, referenceHeader) > -1;
+                    if (!headerExists)
+                    {
+                        //offenders.Add(referenceHeader, table.TableName);
+                        exists = false;
+                    }
+                    if (!exists) break;
+                }
+                if (!exists) break;
+            }
+            return exists;
+        }
+
+
     }
 }

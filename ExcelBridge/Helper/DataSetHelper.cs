@@ -105,9 +105,9 @@ namespace ExcelBridge.Helper
             return recordCountList;
         }
 
-        public  bool ColumnsExist(List<string> columns)
+        public bool ColumnsExist(List<string> columns)
         {
-            Dictionary<string, string> offenders = new Dictionary<string, string>();
+            //Dictionary<string, string> offenders = new Dictionary<string, string>();
             bool exists = true;
 
             foreach (string column in columns)
@@ -116,7 +116,7 @@ namespace ExcelBridge.Helper
                 {
                     if (!table.Columns.Contains(column))
                     {
-                        offenders.Add(column,table.TableName);
+                        //offenders.Add(column,table.TableName);
                         exists = false;
                     }
                     if (!exists) break;
@@ -126,5 +126,22 @@ namespace ExcelBridge.Helper
             return exists;
         }
 
+        public bool ColumnsExist(string tableName , List<string> columns)
+        {
+            //Dictionary<string, string> offenders = new Dictionary<string, string>();
+            bool exists = true;
+
+            foreach (string column in columns)
+            {
+                DataTable table = dataset.Tables[tableName];
+                    if (!table.Columns.Contains(column))
+                    {
+                        //offenders.Add(column,table.TableName);
+                        exists = false;
+                    }
+                    if (!exists) break;
+            }
+            return exists;
+        }
     }
 }

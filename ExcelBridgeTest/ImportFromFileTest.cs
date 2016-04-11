@@ -10,7 +10,7 @@ namespace ExcelBridgeTest
         [TestMethod]
         public void ImportTest()
         {
-            ImportFromFile xl = new ImportFromFile(@"C:\Users\Administrator.GCCHR\Documents\Contact list - Copy.xlsx");
+            ExcelFile xl = new ExcelFile(@"C:\Users\Administrator.GCCHR\Documents\Contact list - Copy.xlsx");
             System.Data.DataSet importedData = xl.Import();
         }
     }
